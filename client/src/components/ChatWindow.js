@@ -1,22 +1,32 @@
 import React from 'react';
+import axios from 'axios';
 import { connect } from 'react-redux';
 import { setFlash } from '../actions/flash';
-import { addmessage } from '../actions/messages';
+import { addMessage } from '../actions/messages';
 import ChatMessages from './ChatMessage';
 import {
   Segment,
   Header,
   Form,
-  Textarea,
+  TextArea,
   Button
 } from 'semantic-ui-react';
 
-class ChatWindow extends React.Components {
-  state = {newmessage: '' }
+class ChatWindow extends React.Component {
+  state = {newMessage: '' }
 
   componentDidMount() {
     const { dispatch } = this.props;
+    window.MessageBus.start();
     dispatch(setFlash('Welcome To My Chat App', 'green'))
+
+    window.MessageBus.subscribe('/chat_channel', (data) => {
+      dispatch(addMessage(data));
+    })
+  }
+
+  componentWillUnmount() {
+    window.MessageBus.unsubscribe('/chat_channel')
   }
 
   displayMessages = () => {
@@ -24,7 +34,7 @@ class ChatWindow extends React.Components {
 
     if (messages.length)
      return messages.map( (message, i) => {
-       return <ChatMessage key={i} message={message} />
+       return <ChatMessages key={i} message={message} />
      })
     else 
       return(
@@ -39,8 +49,16 @@ class ChatWindow extends React.Components {
     const { dispatch, user: { email } } = this.props;
     const { newMessage } = this.state;
     const message = { email, body: newMessage };
-    dispatch(addMessage(message));
-    this.setState({ newMessage: '' })
+
+    axios.post('/api/messages', message)
+      .then( ({ headers }) => {
+        dispatch({ type: 'HEADERS', headers })
+        this.setState({ newMessage: '' })
+      })
+      .catch( ({ headers }) => {
+        dispatch({ type: 'HEADERS', headers })
+        dispatch(setFlash('Error Posting Messages', 'red'))
+      })
   }
 
   setMessage = (e) => {
@@ -60,8 +78,8 @@ class ChatWindow extends React.Components {
         </Segment>
         <Segment style={styles.messageInput}>
           <Form onSubmit={addMessage}>
-            <Textarea value={this.state.newMessage} onChange={setMessage} placeholder="Write Something Nice!" autoFocus required>
-            </Textarea>
+            <TextArea value={this.state.newMessage} onChange={this.setMessage} placeholder="Write Something Nice!" autoFocus required> 
+            </TextArea>
             <Segment basic textAlign="center">
               <Button type="submit" primary>Send message</Button>
             </Segment>
