@@ -11,8 +11,8 @@ class NavBar extends Component {
     if (user.id) {
       return (
         <Menu.Menu position='right'>
-          <Link to='/chat'>
-            <Menu.Item name="chat">Chat</Menu.Item>
+          <Link to="/chat">
+            <Menu.Item name="Chat" />
           </Link>
           <Menu.Item
             name='Logout'

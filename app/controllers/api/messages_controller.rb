@@ -1,9 +1,18 @@
 class Api::MessagesController < ApplicationController
-  befoe_action :authenticate_user!
+  before_action :authenticate_user!
+
+  def index
+    render json: Message.order(:created_at).limit(30)
+  end
 
   def create
-    MessageBus.publish "/chat_channel", { email: params[:email], body: params[:body] }
-    #Can I add another channel right under this one?
-    #How do I let a user create a channel?
+    email = params[:email]
+    body = params[:body]
+    message = Message.new(email: email, body: body)
+    if message.save
+      MessageBus.publish "/chat_channel", message.to_json
+    else
+      render json: { errors: message.errors.full_messages }, status: 422
+    end
   end
 end
